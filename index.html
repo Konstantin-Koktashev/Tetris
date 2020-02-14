@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tetris | by Kosta</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="shortcut icon"
+      href="img/favicon-16x16.png"
+      type="image/x-icon"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css?family=Audiowide&display=swap");
+    </style>
+  </head>
+  <body onload="onInit()">
+    <div class="header">Tetris By || Kosta</div>
+    <div class="main">
+      <div class="stats">
+        <div class="timer" onclick="timer()">
+          Time: <span class="stopwatch"></span>
+        </div>
+        <div class="score">Your Score: <span></span></div>
+        <button class="moveLeft " onclick="moveLeft(this)">
+          <span> <img src="img/back.png" alt="" srcset=""/></span>
+        </button>
+        <button class="move " onclick="moveRight(this)">
+          <span><img src="img/foward.png" alt="" srcset=""/></span>
+        </button>
+      </div>
+      <div class="container"></div>
+    </div>
+
+    <button class="gameBtn" onclick="toggleGameOn(this)">Start Game</button>
+
+    <script src="js/main.js"></script>
+    <script src="js/timer.js"></script>
+  </body>
+</html>
