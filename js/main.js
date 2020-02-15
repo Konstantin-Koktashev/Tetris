@@ -8,8 +8,8 @@ var height = 28;
 var width = 14;
 var nextTermino = false;
 var currentShape = [];
+var collisionIdx = 0;
 var nextLocations = [];
-var nextCells = [];
 var direction = "";
 var gScore = 0;
 var gBoard;
@@ -96,18 +96,19 @@ function drawNextTermino() {
   cells.push(gBoard[0][randomIndex - 1]);
   cells.push(gBoard[1][randomIndex]);
   cells.push(gBoard[1][randomIndex - 1]);
+
   if (cells.some(cell => cell.isLocked)) {
     clearInterval(gInterval);
     stopwatch.stop();
     document.querySelector(".gameBtn").innerHTML = "Restart Game";
     return;
   }
-  currentShape = cells;
   cells.forEach(cell => {
-    nextLocations.push([cell.i, cell.j]);
     document.querySelector(`.cell${cell.i}-${cell.j}`).style.backgroundColor =
       "red";
   });
+  currentShape = cells;
+  updateNextLocation();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -115,23 +116,84 @@ function drawNextTermino() {
 /* -------------------------------------------------------------------------- */
 
 function clearRow() {
+  collisionIdx = 0;
   for (var i = 0; i < gBoard.length; i++) {
     var row = gBoard[i];
+    if (row.every(cell => cell.isLocked)) {
+      gScore += 50;
+      collisionIdx = gBoard.indexOf(row) - 2;
+      row.forEach((cell, index) => {
+        cell.isLocked = false;
+        document.querySelector(
+          `.cell${row[index].i}-${row[index].j}`
+        ).style.backgroundColor = "white";
+      });
+    }
+  }
+  if (gBoard[collisionIdx].some(cell => cell.isLocked)) {
+    moveBoardDown();
+  }
+
+  document.querySelector(".score span").innerHTML = gScore;
+}
+
+/* -------------------------------------------------------------------------- */
+/*     If cells above the cleared row are also termino,move them all down     */
+/* -------------------------------------------------------------------------- */
+
+function moveBoardDown() {
+  updateCellLocation();
+  removeAllShapes();
+  redrawShapes();
+}
+
+function redrawShapes() {
+  for (var i = 0; i < gBoard.length; i++) {
     for (var j = 0; j < gBoard[0].length; j++) {
-      if (row.some(cell => !cell.isLocked)) {
-        continue;
-      } else {
-        row.forEach(cell => {
-          cell.isLocked = false;
-          document.querySelector(
-            `.cell${cell.i}-${cell.j}`
-          ).style.backgroundColor = "white";
-        });
-        gScore += 50;
+      var cell = gBoard[i][j];
+      if (cell.isLocked) {
+        document.querySelector(
+          `.cell${cell.i}-${cell.j}`
+        ).style.backgroundColor = "red";
       }
     }
   }
-  document.querySelector(".score span").innerHTML = gScore;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                          Update The cell Location                          */
+/* -------------------------------------------------------------------------- */
+
+function updateCellLocation() {
+  var cells = unlockCells();
+  debugger;
+  for (var i = 0; i < cells.length; i++) {
+    gBoard[cells[i].i + 2][cells[i].j].isLocked = true;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/*              Return all the Locked Cells, Set them to unlocked             */
+/* -------------------------------------------------------------------------- */
+
+function unlockCells() {
+  var cellsToModify = [];
+  for (var i = 0; i <= collisionIdx; i++) {
+    for (var j = 0; j < gBoard[0].length; j++) {
+      var cell = gBoard[i][j];
+      if (cell.isLocked) cellsToModify.push(cell);
+      cell.isLocked = false;
+    }
+  }
+  return cellsToModify;
+}
+
+function removeAllShapes() {
+  for (var i = 0; i < gBoard.length; i++) {
+    for (var j = 0; j < gBoard[0].length; j++) {
+      document.querySelector(`.cell${i}-${j}`).style.backgroundColor = "white";
+    }
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -139,63 +201,45 @@ function clearRow() {
 /* -------------------------------------------------------------------------- */
 
 function drawShape() {
+  clearRow();
   updateNextLocation();
-  updateNextCells();
-  var cells = currentShape;
-  var newCells = [];
   var VerticalCollision = detectCollisionVertical();
   var horizontalCollision = detectHorizontalCollision();
   if (VerticalCollision) {
-    cells.forEach(cell => (cell.isLocked = true));
-    clearRow();
+    currentShape.forEach(cell => (cell.isLocked = true));
     drawNextTermino();
     return;
   }
   if (horizontalCollision) {
-    clearRow();
+    direction = "down";
     return;
   }
   clearCurrent();
-  // debugger
   if (direction === "right") {
-    newCells = [];
-    for (var i = 0; i < cells.length; i++) {
-      var cell = cells[i];
-      cell = gBoard[cell.i][cell.j + 1];
-      newCells.push(cell);
-      document.querySelector(`.cell${cell.i}-${cell.j}`).style.backgroundColor =
-        "red";
-    }
+    nextLocations.forEach(
+      location =>
+        (document.querySelector(
+          `.cell${location[0]}-${location[1]}`
+        ).style.backgroundColor = "red")
+    );
   } else if (direction === "left") {
-    newCells = [];
-    nextLocations = currentShape.map(cell => {
-      var arr = [cell.i, cell.j - 1];
-      return arr;
-    });
-    for (var i = 0; i < cells.length; i++) {
-      var cell = cells[i];
-      cell = gBoard[cell.i][cell.j - 1];
-
-      newCells.push(cell);
-      document.querySelector(`.cell${cell.i}-${cell.j}`).style.backgroundColor =
-        "red";
-    }
+    nextLocations.forEach(
+      location =>
+        (document.querySelector(
+          `.cell${location[0]}-${location[1]}`
+        ).style.backgroundColor = "red")
+    );
   } else if (direction === "down") {
-    newCells = [];
-    nextLocations = currentShape.map(cell => {
-      var arr = [cell.i + 1, cell.j];
-      return arr;
-    });
-    for (var i = 0; i < cells.length; i++) {
-      var cell = cells[i];
-      cell = gBoard[cell.i + 1][cell.j];
-      newCells.push(cell);
-      document.querySelector(`.cell${cell.i}-${cell.j}`).style.backgroundColor =
-        "red";
-    }
+    nextLocations.forEach(
+      location =>
+        (document.querySelector(
+          `.cell${location[0]}-${location[1]}`
+        ).style.backgroundColor = "red")
+    );
   }
-  currentShape = newCells;
-  direction = "";
+  currentShape = nextLocations.map(
+    location => gBoard[location[0]][location[1]]
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -205,10 +249,12 @@ function drawShape() {
 function detectCollisionVertical() {
   var collision = false;
   if (direction === "down") {
-    if (nextLocations.some(cell => cell[0] >= gBoard.length)) {
-      collision = true;
+    if (nextLocations.some(location => location[0] > gBoard.length - 1)) {
+      return (collision = true);
     }
-    if (nextCells.some(cell => cell.isLocked)) {
+    if (
+      nextLocations.some(location => gBoard[location[0]][location[1]].isLocked)
+    ) {
       collision = true;
     }
   }
@@ -227,8 +273,10 @@ function detectHorizontalCollision() {
       nextLocations.some(cell => cell[1] < 0)
     ) {
       collision = true;
-    } else if (nextCells.some(cell => cell.isLocked)) {
-      collision = false;
+    } else if (
+      nextLocations.some(location => gBoard[location[0]][location[1]].isLocked)
+    ) {
+      collision = true;
       direction = "down";
     }
   }
@@ -264,24 +312,7 @@ function checkKey(e) {
   } else if (e.keyCode === 38) {
     direction = "down";
   }
-  updateNextCells();
   drawShape();
-}
-
-/* -------------------------------------------------------------------------- */
-/*         Clone the array of nextLocations, Return the matching cells        */
-/* -------------------------------------------------------------------------- */
-
-function updateNextCells() {
-  nextCells = JSON.parse(JSON.stringify(nextCells));
-  nextCells = nextLocations.map(location => {
-    if (location[0] > gBoard.length - 1)
-      return gBoard[location[0] - 1][location[1]];
-    else if (location[1] > gBoard[0].length - 1)
-      return gBoard[location[0]][location[1] - 1];
-    else if (location[1] < 0) return gBoard[location[0]][location[1] + 1];
-    else return gBoard[location[0]][location[1]];
-  });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -331,14 +362,17 @@ function renderBoard(board) {
   document.querySelector(".container").innerHTML = strHtml;
 }
 
-function creatBoard(rows, cols) {
+function creatBoard(size) {
   var board = [];
-  for (var i = 0; i < rows; i++) {
+  for (var i = 0; i < size; i++) {
     board[i] = [];
-    for (var j = 0; j < cols; j++) {
+    for (var j = 0; j < size / 2; j++) {
       board[i][j] = creatCell(i, j);
     }
   }
+
+  console.log(board);
+
   return board;
 }
 
